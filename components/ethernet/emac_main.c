@@ -75,8 +75,7 @@ esp_err_t emac_post(emac_sig_t sig, emac_par_t par);
 
 static void emac_macaddr_init(void)
 {
-    esp_efuse_read_mac(&(emac_config.macaddr[0]));
-    emac_config.macaddr[5] = emac_config.macaddr[5] + 3;
+    esp_read_mac(&(emac_config.macaddr[0]), ESP_MAC_ETH);
 }
 
 void esp_eth_get_mac(uint8_t mac[6])
@@ -225,6 +224,7 @@ static void emac_set_user_config_data(eth_config_t *config )
     emac_config.emac_flow_ctrl_enable = false;
 #endif
     emac_config.emac_phy_get_partner_pause_enable = config->phy_get_partner_pause_enable;
+    emac_config.emac_phy_power_enable = config->phy_power_enable;
 }
 
 static void emac_enable_intr()
@@ -288,6 +288,11 @@ static esp_err_t emac_verify_args(void)
 
     if (emac_config.emac_flow_ctrl_enable == true && emac_config.emac_phy_get_partner_pause_enable == NULL) {
         ESP_LOGE(TAG, "phy get partner pause enable func is null");
+        ret = ESP_FAIL;
+    }
+
+    if(emac_config.emac_phy_power_enable == NULL) {
+        ESP_LOGE(TAG, "phy power enable func is null");
         ret = ESP_FAIL;
     }
 
@@ -948,6 +953,8 @@ esp_err_t esp_eth_init(eth_config_t *config)
     if (ret != ESP_OK) {
         goto _exit;
     }
+
+    emac_config.emac_phy_power_enable(true);    
 
     //before set emac reg must enable clk
     emac_enable_clk(true);
